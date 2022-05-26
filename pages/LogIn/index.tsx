@@ -12,6 +12,9 @@ const LogIn = () => {
   const queryClient = useQueryClient();
   const { isLoading, isSuccess, status, isError, data, error } = useQuery('user', () =>
     fetcher({ queryKey: '/api/users' }),
+    {
+      staleTime: 2000,
+    }
   );
   const mutation = useMutation<IUser, AxiosError, { email: string; password: string }>('user', (data) =>
     axios.post('/api/users/login', data, {
@@ -44,7 +47,7 @@ const LogIn = () => {
   }
 
   if(data) {
-    return <Redirect to="/workspace/sleact/channel/일반" />
+    return <Redirect to="/workspace/sleact/channel/일반\" />
   }
 
   return (

@@ -31,6 +31,8 @@ import { toast } from 'react-toastify';
 import CreateChannelModal from '@components/createModal';
 import InviteChannelModal from '@components/inviteChannel';
 import InviteWorkspaceModal from '@components/inviteWorkspace';
+import ChannelList from '@components/ChannelList';
+import DMList from '@components/DMList';
 
 const Channel = loadable(() => import('@pages/Channel'));
 const DirectMessage = loadable(() => import('@pages/DirectMessage'));
@@ -48,7 +50,7 @@ const Workspace: VFC = () => {
   const { workspace } = useParams<{ workspace: string }>();
 
   const { data: userData } = useQuery<IUser | false>('user', () => fetcher({ queryKey: '/api/users' }), {
-    cacheTime: 3000,
+    staleTime: 2000,
   });
 
   const { data: channelData } = useQuery<IChannel[]>(
@@ -173,6 +175,8 @@ const Workspace: VFC = () => {
                 <button onClick={onLogout}>로그아웃</button>
               </WorkspaceModal>
             </Menu>
+            <ChannelList />
+            <DMList />
           </MenuScroll>
         </Channels>
         <Chats>
