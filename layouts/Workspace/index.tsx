@@ -1,9 +1,9 @@
-import { IUser } from '@typings/db';
+import { IChannel, IUser } from '@typings/db';
 import fetcher from '@utils/fetcher';
 import axios from 'axios';
 import React, { VFC, useCallback, useState } from 'react';
 import { useQuery, useQueryClient } from 'react-query';
-import { Redirect, Route, Switch } from 'react-router';
+import { Redirect, Route, Switch, useParams } from 'react-router';
 import gravatar from 'gravatar';
 import {
   AddButton,
@@ -29,6 +29,8 @@ import { Button, Input, Label } from '@pages/SignUp/style';
 import Modal from '@components/Modal';
 import { toast } from 'react-toastify';
 import CreateChannelModal from '@components/createModal';
+import InviteChannelModal from '@components/inviteChannel';
+import InviteWorkspaceModal from '@components/inviteWorkspace';
 
 const Channel = loadable(() => import('@pages/Channel'));
 const DirectMessage = loadable(() => import('@pages/DirectMessage'));
@@ -39,9 +41,23 @@ const Workspace: VFC = () => {
   const [newWorkspace, onChangeNewWorkspace, setNewWorksapace] = useInput('');
   const [showCreateChannelModal, setShowCreateChannelModal] = useState(false);
   const [showWorkspaceModal, setShowWorkspaceModal] = useState(false);
+  const [showInviteWorkspaceModal, setShowInviteWorkspaceModal] = useState(false);
+  const [showInviteChannelModal, setShowInviteChannelModal] = useState(false);
   const [newUrl, onChangeNewUrl, setNewUrl] = useInput('');
   const queryClient = useQueryClient();
-  const { data: userData } = useQuery<IUser | false>('user', () => fetcher({ queryKey: '/api/users' }), {});
+  const { workspace } = useParams<{ workspace: string }>();
+
+  const { data: userData } = useQuery<IUser | false>('user', () => fetcher({ queryKey: '/api/users' }), {
+    cacheTime: 3000,
+  });
+
+  const { data: channelData } = useQuery<IChannel[]>(
+    ['workspace', workspace, 'channel'],
+    () => fetcher({ queryKey: `/api/workspaces/${workspace}/channel` }),
+    {
+      enabled: !!userData,
+    },
+  );
 
   const onLogout = useCallback(() => {
     axios
@@ -100,9 +116,15 @@ const Workspace: VFC = () => {
     setShowCreateChannelModal(true);
   }, []);
 
+  const onClickInviteWorkspace = useCallback(() => {
+    setShowInviteWorkspaceModal(true);
+  }, []);
+
   const onCloseModal = useCallback(() => {
     setCreateModal(false);
     setShowCreateChannelModal(false);
+    setShowInviteChannelModal(false);
+    setShowInviteWorkspaceModal(false);
   }, []);
 
   if (!userData) {
@@ -133,7 +155,7 @@ const Workspace: VFC = () => {
         <Workspaces>
           {userData.Workspaces.map((v) => {
             return (
-              <Link key={v.id} to={`/workspace/${v.id}/channel/일반`}>
+              <Link key={v.id} to={`/workspace/${v.url}/channel/일반`}>
                 <WorkspaceButton>{v.name.slice(0, 1).toUpperCase()}</WorkspaceButton>
               </Link>
             );
@@ -146,6 +168,7 @@ const Workspace: VFC = () => {
             <Menu show={showWorkspaceModal} onCloseModal={toggleWorkspaceModal} style={{ top: 95, left: 80 }}>
               <WorkspaceModal>
                 <h2>Sleact</h2>
+                <button onClick={onClickInviteWorkspace}>워크스페이스에 사용자 초대</button>
                 <button onClick={onClickAddChannel}>채널 만들기</button>
                 <button onClick={onLogout}>로그아웃</button>
               </WorkspaceModal>
@@ -154,8 +177,8 @@ const Workspace: VFC = () => {
         </Channels>
         <Chats>
           <Switch>
-            <Route path="/workspace/channel" component={Channel} />
-            <Route path="/workspace/dm" component={DirectMessage} />
+            <Route path="/workspace/:workspace/channel/:channel" component={Channel} />
+            <Route path="/workspace/:workspace/dm/:id" component={DirectMessage} />
           </Switch>
         </Chats>
       </WorkspaceWrapper>
@@ -176,6 +199,16 @@ const Workspace: VFC = () => {
         show={showCreateChannelModal}
         onCloseModal={onCloseModal}
         setShowCreateChannelModal={setShowCreateChannelModal}
+      />
+      <InviteWorkspaceModal
+        show={showInviteWorkspaceModal}
+        onCloseModal={onCloseModal}
+        setShowInviteWorkspaceModal={setShowInviteWorkspaceModal}
+      />
+      <InviteChannelModal
+        show={showInviteChannelModal}
+        onCloseModal={onCloseModal}
+        setShowInviteChannelModal={setShowInviteChannelModal}
       />
     </div>
   );
