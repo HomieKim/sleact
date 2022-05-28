@@ -1,7 +1,7 @@
 import { IChannel, IUser } from '@typings/db';
 import fetcher from '@utils/fetcher';
 import axios from 'axios';
-import React, { VFC, useCallback, useState } from 'react';
+import React, { VFC, useCallback, useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from 'react-query';
 import { Redirect, Route, Switch, useParams } from 'react-router';
 import gravatar from 'gravatar';
@@ -33,6 +33,7 @@ import InviteChannelModal from '@components/inviteChannel';
 import InviteWorkspaceModal from '@components/inviteWorkspace';
 import ChannelList from '@components/ChannelList';
 import DMList from '@components/DMList';
+import useSocket from '@hooks/useSocket';
 
 const Channel = loadable(() => import('@pages/Channel'));
 const DirectMessage = loadable(() => import('@pages/DirectMessage'));
@@ -47,19 +48,30 @@ const Workspace: VFC = () => {
   const [showInviteChannelModal, setShowInviteChannelModal] = useState(false);
   const [newUrl, onChangeNewUrl, setNewUrl] = useInput('');
   const queryClient = useQueryClient();
+
   const { workspace } = useParams<{ workspace: string }>();
-
-  const { data: userData } = useQuery<IUser | false>('user', () => fetcher({ queryKey: '/api/users' }), {
-    staleTime: 2000,
-  });
-
+  const { data: userData } = useQuery<IUser | false>('user', () => fetcher({ queryKey: '/api/users' }), {});
   const { data: channelData } = useQuery<IChannel[]>(
     ['workspace', workspace, 'channel'],
-    () => fetcher({ queryKey: `/api/workspaces/${workspace}/channel` }),
+    () => fetcher({ queryKey: `/api/workspaces/${workspace}/channels` }),
     {
       enabled: !!userData,
     },
   );
+  const [socket, disconnect] = useSocket(workspace);
+
+  useEffect(() => {
+    if (channelData && userData && socket) {
+      console.log(socket);
+      socket.emit('login', { id: userData.id, channels: channelData.map((v) => v.id) });
+    }
+  }, [socket, channelData, userData]);
+
+  useEffect(() => {
+    return () => {
+      disconnect();
+    };
+  }, [workspace, disconnect]);
 
   const onLogout = useCallback(() => {
     axios
