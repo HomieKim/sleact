@@ -18,7 +18,7 @@ const Channel = () => {
   const { workspace, channel } = useParams<{ workspace: string; channel: string }>();
   const { data: myData } = useQuery('user', () => fetcher({ queryKey: '/api/users' }));
   const [chat, onChangeChat, setChat] = useInput('');
-  const { data: channelData } = useQuery<IChannel>(['workspace', workspace, 'channel', channel, 'chat'], () =>
+  const { data: channelData } = useQuery<IChannel>(['workspace', workspace, 'channel', channel, 'channel'], () =>
     fetcher({ queryKey: `/api/workspaces/${workspace}/channels/${channel}` }),
   );
   const {
@@ -26,9 +26,9 @@ const Channel = () => {
     fetchNextPage,
     hasNextPage,
   } = useInfiniteQuery<IChat[]>(
-    ['workspace', workspace, 'channel', channel, 'chat'],
-    ({ pageParam }) =>
-      fetcher({ queryKey: `/api/workspaces/${workspace}/channels/${channel}/chats?perPage=20&page=${pageParam + 1}` }),
+    ['workspace', workspace, 'channel', channel, 'chatData'],
+    ({ pageParam=0 }) =>
+      fetcher({ queryKey: `/api/workspaces/${workspace}/channels/${channel}/chats?perPage=20&page=${pageParam+1}` }),
     {
       getNextPageParam: (lastPage, pages) => {
         if (lastPage.length === 0) return;
@@ -44,8 +44,8 @@ const Channel = () => {
     },
   );
   const [socket] = useSocket(workspace);
-  const isEmpty = chatData?.pages[0]?.length === 0;
-  const isReachingEnd = isEmpty || (chatData && chatData.pages[chatData.pages.length - 1]?.length < 20) || false;
+  const isEmpty = chatData?.pages?.[0]?.length === 0;
+  const isReachingEnd = isEmpty || (chatData && chatData.pages?.[chatData.pages.length - 1]?.length < 20) || false;
   const scrollbarRef = useRef<Scrollbars>(null);
   const [showInviteChannelModal, setShowInviteChannelModal] = useState(false);
   const [dragOver, setDragOver] = useState(false);
@@ -82,7 +82,7 @@ const Channel = () => {
         console.error(error);
       },
       onSuccess() {
-        queryClient.refetchQueries(['workspace', workspace, 'channel', channel, 'chat']);
+        queryClient.refetchQueries(['workspace', workspace, 'channel', channel, 'chatData']);
       },
     },
   );
@@ -140,7 +140,7 @@ const Channel = () => {
 
   // 로딩 시 스크롤바 제일 아래로
   useEffect(() => {
-    if (chatData?.pages.length === 1) {
+    if (chatData?.pages?.length === 1) {
       console.log('toBottomWhenLoaded', scrollbarRef.current);
       setTimeout(() => {
         console.log('scrollbar', scrollbarRef.current);
@@ -208,10 +208,10 @@ const Channel = () => {
     setDragOver(true);
   }, []);
 
-  if (!myData) {
+  if (!chatData || !myData || !channelData) {
     return null;
   }
-
+  console.log("chatData : ", chatData)
   const chatSections = makeSection(chatData ? chatData.pages.flat().reverse() : []);
 
   return (

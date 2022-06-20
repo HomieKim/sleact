@@ -27,7 +27,7 @@ const DirectMessage = () => {
     hasNextPage,
   } = useInfiniteQuery<IDM[]>(
     ['workspace', workspace, 'dm', id, 'chat'],
-    ({ pageParam }) =>
+    ({ pageParam=0 }) =>
       fetcher({ queryKey: `/api/workspaces/${workspace}/dms/${id}/chats?perPage=20&page=${pageParam + 1}` }),
     {
       getNextPageParam: (lastPage, pages) => {
