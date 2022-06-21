@@ -44,7 +44,11 @@ const DirectMessage = () => {
 
   const mutation = useMutation<IDM, AxiosError, { content: string }>(
     ['workspace', workspace, 'dm', id, 'chat'],
-    () => fetcher({ queryKey: `/api/workspaces/${workspace}/dms/${id}/chats` }),
+    (content) => axios.post(`/api/workspaces/${workspace}/dms/${id}/chats`,{
+      content : content.content,
+    },{
+      withCredentials:true
+    }),
     {
       onMutate(mutateData) {
         queryClient.setQueryData<InfiniteData<IDM[]>>(['workspace', workspace, 'dm', id, 'chat'], (data) => {

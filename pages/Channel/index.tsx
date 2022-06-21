@@ -26,9 +26,9 @@ const Channel = () => {
     fetchNextPage,
     hasNextPage,
   } = useInfiniteQuery<IChat[]>(
-    ['workspace', workspace, 'channel', channel, 'chatData'],
+    ['workspace', workspace, 'channel', channel, 'chat'],
     ({ pageParam=0 }) =>
-      fetcher({ queryKey: `/api/workspaces/${workspace}/channels/${channel}/chats?perPage=20&page=${pageParam+1}` }),
+      fetcher({ queryKey: `/api/workspaces/${workspace}/channels/${channel}/chats?perPage=20&page=${pageParam + 1}` }),
     {
       getNextPageParam: (lastPage, pages) => {
         if (lastPage.length === 0) return;
@@ -44,15 +44,19 @@ const Channel = () => {
     },
   );
   const [socket] = useSocket(workspace);
-  const isEmpty = chatData?.pages?.[0]?.length === 0;
-  const isReachingEnd = isEmpty || (chatData && chatData.pages?.[chatData.pages.length - 1]?.length < 20) || false;
+  const isEmpty = chatData?.pages[0]?.length === 0;
+  const isReachingEnd = isEmpty || (chatData && chatData.pages[chatData.pages.length - 1]?.length < 20) || false;
   const scrollbarRef = useRef<Scrollbars>(null);
   const [showInviteChannelModal, setShowInviteChannelModal] = useState(false);
   const [dragOver, setDragOver] = useState(false);
 
   const mutation = useMutation<IDM, AxiosError, { content: string }>(
     ['workspace', workspace, 'channel', channel, 'chat'],
-    () => fetcher({ queryKey: `/api/workspaces/${workspace}/channels/${channel}/chats` }),
+    (content) => axios.post(`/api/workspaces/${workspace}/channels/${channel}/chats`,{
+      content : content.content,
+    },{
+      withCredentials:true
+    }),
     {
       onMutate(mutateData) {
         if (!channelData) return;
@@ -82,7 +86,7 @@ const Channel = () => {
         console.error(error);
       },
       onSuccess() {
-        queryClient.refetchQueries(['workspace', workspace, 'channel', channel, 'chatData']);
+        queryClient.refetchQueries(['workspace', workspace, 'channel', channel, 'chat']);
       },
     },
   );
@@ -140,7 +144,7 @@ const Channel = () => {
 
   // 로딩 시 스크롤바 제일 아래로
   useEffect(() => {
-    if (chatData?.pages?.length === 1) {
+    if (chatData?.pages.length === 1) {
       console.log('toBottomWhenLoaded', scrollbarRef.current);
       setTimeout(() => {
         console.log('scrollbar', scrollbarRef.current);
@@ -208,10 +212,10 @@ const Channel = () => {
     setDragOver(true);
   }, []);
 
-  if (!chatData || !myData || !channelData) {
+  if (!myData || !myData) {
     return null;
   }
-  console.log("chatData : ", chatData)
+
   const chatSections = makeSection(chatData ? chatData.pages.flat().reverse() : []);
 
   return (
